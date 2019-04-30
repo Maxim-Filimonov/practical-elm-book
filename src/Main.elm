@@ -111,9 +111,10 @@ navbar =
 inputPage : Model -> Element Msg
 inputPage model =
     column
-        [ width (px 800)
+        [ width (fill |> maximum 800)
         , spacingXY 0 10
         , centerX
+        , paddingXY 40 10
         ]
         [ Input.multiline
             [ height (px 300)

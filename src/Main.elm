@@ -11,11 +11,12 @@ import Html
 
 type Page
     = InputPage
+    | DisplayPage
 
 
 type Msg
     = NoOp
-    | ChangePlanText String
+    | ChangedPlanText String
     | PlanSubmitted
 
 
@@ -54,8 +55,14 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        _ ->
+        ChangedPlanText planText ->
+            ( { model | planText = planText }, Cmd.none )
+
+        NoOp ->
             ( model, Cmd.none )
+
+        PlanSubmitted ->
+            ( { model | currentPage = DisplayPage }, Cmd.none )
 
 
 
@@ -124,7 +131,7 @@ inputPage model =
             , padding 3
             ]
             { label = Input.labelAbove [] <| text "Paste your PSQL Explain output(JSON format):"
-            , onChange = ChangePlanText
+            , onChange = ChangedPlanText
             , placeholder = Nothing
             , spellcheck = False
             , text = model.planText
@@ -145,14 +152,30 @@ inputPage model =
         ]
 
 
+displayPage : Model -> Element Msg
+displayPage model =
+    column [ centerX ]
+        [ text model.planText
+        ]
+
+
 view : Model -> Browser.Document Msg
 view model =
+    let
+        pageContent =
+            case model.currentPage of
+                DisplayPage ->
+                    displayPage model
+
+                InputPage ->
+                    inputPage model
+    in
     { title = "Visual Expresser"
     , body =
         [ layout [] <|
             column [ width fill, spacingXY 0 20 ]
                 [ navbar
-                , inputPage model
+                , pageContent
                 ]
         ]
     }

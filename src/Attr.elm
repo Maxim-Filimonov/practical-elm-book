@@ -1,4 +1,4 @@
-module Attr exposing (defaultBorders, grayButton, greenButton)
+module Attr exposing (defaultBorders, error, grayButton, greenButton, input)
 
 import Color exposing (..)
 import Element exposing (..)
@@ -34,4 +34,15 @@ grayButton =
     , Border.rounded 3
     , Border.widthEach { defaultBorders | bottom = 1, right = 1 }
     , Font.color white
+    ]
+
+
+input : List (Attribute msg)
+input =
+    []
+
+
+error : List (Attribute msg)
+error =
+    [ Font.color highlight
     ]

@@ -18,6 +18,7 @@ import PlanParsers.Json exposing (..)
 type Page
     = InputPage
     | DisplayPage
+    | LoginPage
 
 
 type Msg
@@ -29,6 +30,9 @@ type Msg
     | ToggledMenu
     | CreatePlanClicked
     | LoginClicked
+    | ChangedPassword String
+    | ChangedUserName String
+    | LoginSubmitted
 
 
 type alias Model =
@@ -36,6 +40,9 @@ type alias Model =
     , planText : String
     , selectedNode : Maybe Plan
     , isModelOpen : Bool
+    , userName : String
+    , password : String
+    , lastError : Maybe String
     }
 
 
@@ -49,6 +56,9 @@ init flags =
       , planText = ""
       , selectedNode = Nothing
       , isModelOpen = False
+      , lastError = Nothing
+      , userName = ""
+      , password = ""
       }
       -- ( { currentPage = DisplayPage
       --   , planText = sampleJSON
@@ -92,7 +102,19 @@ update msg model =
         ToggledMenu ->
             ( { model | isModelOpen = not model.isModelOpen }, Cmd.none )
 
-        _ ->
+        ChangedPassword password ->
+            ( { model | password = password }, Cmd.none )
+
+        ChangedUserName userName ->
+            ( { model | userName = userName }, Cmd.none )
+
+        CreatePlanClicked ->
+            ( { model | currentPage = InputPage, planText = "" }, Cmd.none )
+
+        LoginClicked ->
+            ( { model | currentPage = LoginPage, userName = "", password = "" }, Cmd.none )
+
+        LoginSubmitted ->
             ( model, Cmd.none )
 
 
@@ -363,6 +385,44 @@ displayPage model =
         ]
 
 
+loginPage : Model -> Element Msg
+loginPage model =
+    let
+        error =
+            case model.lastError of
+                Just errorMessage ->
+                    el Attr.error <| text errorMessage
+
+                Nothing ->
+                    none
+    in
+    column
+        [ paddingXY 0 20
+        , spacingXY 0 10
+        , width (px 300)
+        , centerX
+        ]
+        [ Input.username Attr.input
+            { onChange = ChangedUserName
+            , text = model.userName
+            , label = Input.labelAbove [] <| text "User name:"
+            , placeholder = Nothing
+            }
+        , Input.currentPassword Attr.input
+            { onChange = ChangedPassword
+            , text = model.password
+            , label = Input.labelAbove [] <| text "Password:"
+            , placeholder = Nothing
+            , show = False
+            }
+        , Input.button Attr.greenButton
+            { onPress = Just LoginSubmitted
+            , label = el [ centerX ] <| text "Login"
+            }
+        , error
+        ]
+
+
 view : Model -> Browser.Document Msg
 view model =
     let
@@ -373,6 +433,9 @@ view model =
 
                 InputPage ->
                     inputPage model
+
+                LoginPage ->
+                    loginPage model
     in
     { title = "Visual Expresser"
     , body =

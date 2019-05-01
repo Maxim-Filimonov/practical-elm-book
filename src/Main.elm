@@ -1,6 +1,8 @@
 module Main exposing (main)
 
+import Attr exposing (..)
 import Browser
+import Color exposing (..)
 import Constants exposing (sampleJSON)
 import Element exposing (..)
 import Element.Background as Background
@@ -24,12 +26,16 @@ type Msg
     | PlanSubmitted
     | MouseEnteredPlanNode Plan
     | MouseLeftPlanNode Plan
+    | ToggledMenu
+    | CreatePlanClicked
+    | LoginClicked
 
 
 type alias Model =
     { currentPage : Page
     , planText : String
     , selectedNode : Maybe Plan
+    , isModelOpen : Bool
     }
 
 
@@ -39,14 +45,15 @@ type alias Flags =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    -- ( { currentPage = InputPage
-    --   , planText = ""
-    --   , selectedNode = Nothing
-    --   }
-    ( { currentPage = DisplayPage
-      , planText = sampleJSON
+    ( { currentPage = InputPage
+      , planText = ""
       , selectedNode = Nothing
+      , isModelOpen = False
       }
+      -- ( { currentPage = DisplayPage
+      --   , planText = sampleJSON
+      --   , selectedNode = Nothing
+      --   }
     , Cmd.none
     )
 
@@ -82,47 +89,58 @@ update msg model =
         MouseLeftPlanNode plan ->
             ( { model | selectedNode = Nothing }, Cmd.none )
 
+        ToggledMenu ->
+            ( { model | isModelOpen = not model.isModelOpen }, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
+
 
 
 -- VIEW
 
 
-base : Color
-base =
-    rgb255 102 99 255
+menuPanel : Model -> Element Msg
+menuPanel model =
+    let
+        items =
+            [ el [ pointer, onClick CreatePlanClicked ] <| text "New Plan"
+            , el [ pointer, onClick LoginClicked ] <| text "Login"
+            ]
 
+        panel =
+            column
+                [ Background.color white
+                , Border.widthEach { defaultBorders | left = 1 }
+                , Border.color gray
+                , Border.shadow
+                    { offset = ( 0, 0 )
+                    , size = 1
+                    , blur = 10
+                    , color = lightGray
+                    }
+                , Font.bold
+                , Font.color lightGray
+                , width fill
+                , height fill
+                , padding 20
+                , spacingXY 0 20
+                ]
+                items
 
-darkest : Color
-darkest =
-    rgb255 54 52 179
+        overlay =
+            el
+                [ width <| fillPortion 4
+                , height fill
+                , onClick ToggledMenu
+                ]
+                none
+    in
+    if model.isModelOpen then
+        row [ width fill, height fill ] [ overlay, panel ]
 
-
-green : Color
-green =
-    rgb255 86 179 61
-
-
-lightGreen : Color
-lightGreen =
-    rgb255 90 204 59
-
-
-highlight : Color
-highlight =
-    rgb255 255 170 125
-
-
-white : Color
-white =
-    rgb255 255 255 255
-
-
-defaultBorders =
-    { bottom = 0
-    , top = 0
-    , left = 0
-    , right = 0
-    }
+    else
+        none
 
 
 navbar : Element Msg
@@ -134,7 +152,15 @@ navbar =
         , Border.color base
         ]
         [ el [ alignLeft ] <| text "PSQL Expression engine"
-        , el [ alignRight ] <| text "Menu"
+        , Input.button
+            (grayButton
+                ++ [ alignRight
+                   , paddingXY 10 5
+                   ]
+            )
+            { onPress = Just ToggledMenu
+            , label = el [ centerX ] <| text "Menu"
+            }
         ]
 
 
@@ -160,18 +186,15 @@ inputPage model =
             , text = model.planText
             }
         , Input.button
-            [ Background.color green
-            , Border.color lightGreen
-            , Border.rounded 3
-            , Border.widthEach { defaultBorders | bottom = 3 }
-            , Font.bold
-            , Font.color white
-            , paddingXY 20 10
-            , alignRight
-            , width (px 150)
-            , height (px 40)
-            ]
-            { label = el [ centerX ] <| text "Submit", onPress = Just PlanSubmitted }
+            (greenButton
+                ++ [ alignRight
+                   , width (px 150)
+                   , height (px 40)
+                   ]
+            )
+            { label = el [ centerX ] <| text "Submit"
+            , onPress = Just PlanSubmitted
+            }
         ]
 
 
@@ -353,7 +376,10 @@ view model =
     in
     { title = "Visual Expresser"
     , body =
-        [ layout [] <|
+        [ layout
+            [ inFront <| menuPanel model
+            ]
+          <|
             column [ width fill, spacingXY 0 20 ]
                 [ navbar
                 , pageContent

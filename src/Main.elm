@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser
+import Constants exposing (sampleJSON)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -38,8 +39,12 @@ type alias Flags =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( { currentPage = InputPage
-      , planText = ""
+    -- ( { currentPage = InputPage
+    --   , planText = ""
+    --   , selectedNode = Nothing
+    --   }
+    ( { currentPage = DisplayPage
+      , planText = sampleJSON
       , selectedNode = Nothing
       }
     , Cmd.none
@@ -237,6 +242,24 @@ viewAttributes plan =
                 , paragraph [ width fill, Font.bold ] [ text value ]
                 ]
 
+        header name =
+            el
+                [ paddingEach
+                    { top = 10
+                    , bottom = 5
+                    , left = 10
+                    , right = 0
+                    }
+                ]
+            <|
+                el
+                    [ Font.bold
+                    , Border.widthEach { defaultBorders | bottom = 1 }
+                    , Border.color lightGreen
+                    ]
+                <|
+                    text name
+
         commonAttrs common =
             [ viewAttr "Startup Cost" <| String.fromFloat common.startupCost
             , viewAttr "Total Cost" <| String.fromFloat common.totalCost
@@ -255,9 +278,19 @@ viewAttributes plan =
 
         PSeqScan node ->
             commonAttrs node.common
+                ++ [ header "Filter"
+                   , viewAttr "Filter" node.filter
+                   , viewAttr "Width" <| String.fromInt node.rowsRemovedByFilter
+                   ]
 
         PSort node ->
             commonAttrs node.common
+                ++ [ header "Sort"
+                   , viewAttr "Sort Key" <| String.join ", " node.sortKey
+                   , viewAttr "Sort Method" node.sortMethod
+                   , viewAttr "Sort Space Type" node.sortSpaceType
+                   , viewAttr "Sort Space Used" <| String.fromInt node.sortSpaceUsed
+                   ]
 
 
 displayPage : Model -> Element Msg

@@ -1,4 +1,4 @@
-module PlanParsers.Json exposing (PlanJson, decodePlanJson)
+module PlanParsers.Json exposing (Plan(..), Plans(..), decodePlanJson)
 
 import Json.Decode as Decode
 import Json.Decode.Pipeline exposing (..)
@@ -130,7 +130,7 @@ decodeCommonFields =
     Decode.succeed CommonFields
         |> required "Node Type" Decode.string
         |> optional "Plans" decodePlans (Plans [])
-        |> required "Relation Name" Decode.string
+        |> optional "Relation Name" Decode.string ""
         |> optional "Schema" Decode.string ""
         |> required "Startup Cost" Decode.float
         |> required "Total Cost" Decode.float

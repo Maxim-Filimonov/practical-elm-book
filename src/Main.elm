@@ -4,6 +4,7 @@ import Browser
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events exposing (..)
 import Element.Font as Font
 import Element.Input as Input
 import Html
@@ -20,11 +21,14 @@ type Msg
     = NoOp
     | ChangedPlanText String
     | PlanSubmitted
+    | MouseEnteredPlanNode Plan
+    | MouseLeftPlanNode Plan
 
 
 type alias Model =
     { currentPage : Page
     , planText : String
+    , selectedNode : Maybe Plan
     }
 
 
@@ -36,6 +40,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( { currentPage = InputPage
       , planText = ""
+      , selectedNode = Nothing
       }
     , Cmd.none
     )
@@ -66,6 +71,12 @@ update msg model =
         PlanSubmitted ->
             ( { model | currentPage = DisplayPage }, Cmd.none )
 
+        MouseEnteredPlanNode plan ->
+            ( { model | selectedNode = Just plan }, Cmd.none )
+
+        MouseLeftPlanNode plan ->
+            ( { model | selectedNode = Nothing }, Cmd.none )
+
 
 
 -- VIEW
@@ -89,6 +100,11 @@ green =
 lightGreen : Color
 lightGreen =
     rgb255 90 204 59
+
+
+highlight : Color
+highlight =
+    rgb255 255 170 125
 
 
 white : Color
@@ -154,19 +170,140 @@ inputPage model =
         ]
 
 
+planNodeTree : Plan -> List (Element Msg)
+planNodeTree plan =
+    let
+        viewNodeType nodeType =
+            el [ Font.bold ] <| text nodeType
+
+        viewNode node nodeDetails =
+            [ el
+                [ Border.widthEach { defaultBorders | bottom = 1 }
+                , Border.color lightGreen
+                , mouseOver [ Background.color highlight ]
+                , padding 4
+                , onMouseEnter <| MouseEnteredPlanNode plan
+                , onMouseLeave <| MouseLeftPlanNode plan
+                ]
+              <|
+                paragraph []
+                    (viewNodeType node.common.nodeType :: nodeDetails)
+            , childNodeTree node.common.plans
+            ]
+    in
+    case plan of
+        PCTe cteNode ->
+            viewNode cteNode
+                [ text " on "
+                , el [ Font.italic ] <| text cteNode.cteName
+                , text <| " (" ++ cteNode.alias_ ++ ") "
+                ]
+
+        PGeneric genericNode ->
+            viewNode { common = genericNode }
+                []
+
+        PResult resultNode ->
+            viewNode resultNode []
+
+        PSort sortNode ->
+            viewNode sortNode
+                [ text " on "
+                , el [ Font.italic ] <|
+                    text <|
+                        String.join ", " sortNode.sortKey
+                ]
+
+        PSeqScan seqScanNode ->
+            viewNode seqScanNode
+                [ text " on "
+                , el [ Font.italic ] <| text seqScanNode.relationName
+                , text <| " (" ++ seqScanNode.alias_ ++ ") "
+                ]
+
+
+childNodeTree : Plans -> Element Msg
+childNodeTree (Plans plans) =
+    column [ paddingEach { left = 20, bottom = 0, top = 0, right = 0 } ] <|
+        List.concatMap planNodeTree plans
+
+
+viewAttributes : Plan -> List (Element Msg)
+viewAttributes plan =
+    let
+        viewAttr name value =
+            wrappedRow [ width fill ]
+                [ el [ width (px 200) ] <| text name
+                , paragraph [ width fill, Font.bold ] [ text value ]
+                ]
+
+        commonAttrs common =
+            [ viewAttr "Startup Cost" <| String.fromFloat common.startupCost
+            , viewAttr "Total Cost" <| String.fromFloat common.totalCost
+            , viewAttr "Schema" <| common.schema
+            ]
+    in
+    case plan of
+        PCTe node ->
+            commonAttrs node.common
+
+        PGeneric node ->
+            commonAttrs node
+
+        PResult node ->
+            commonAttrs node.common
+
+        PSeqScan node ->
+            commonAttrs node.common
+
+        PSort node ->
+            commonAttrs node.common
+
+
 displayPage : Model -> Element Msg
 displayPage model =
     let
         tree =
             case Json.Decode.decodeString decodePlanJson model.planText of
                 Ok planJson ->
-                    text "Decoded!!!"
+                    planNodeTree planJson.plan
 
                 Err err ->
-                    text <| Json.Decode.errorToString err
+                    [ text <| Json.Decode.errorToString err ]
+
+        attributes =
+            case model.selectedNode of
+                Nothing ->
+                    [ text "" ]
+
+                Just plan ->
+                    viewAttributes plan
     in
-    column [ centerX ]
-        [ tree
+    row
+        [ width fill
+        , paddingEach
+            { top = 20
+            , left = 0
+            , bottom = 0
+            , right = 0
+            }
+        ]
+        [ column
+            [ width (fillPortion 7)
+            , height fill
+            , alignTop
+            ]
+            tree
+        , column
+            [ width (fillPortion 3 |> maximum 500)
+            , height fill
+            , alignTop
+            , padding 5
+            , Border.color base
+            , Border.widthEach { defaultBorders | left = 1 }
+            ]
+          <|
+            attributes
         ]
 
 

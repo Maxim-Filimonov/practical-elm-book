@@ -7,6 +7,8 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html
+import Json.Decode
+import PlanParsers.Json exposing (..)
 
 
 type Page
@@ -154,8 +156,17 @@ inputPage model =
 
 displayPage : Model -> Element Msg
 displayPage model =
+    let
+        tree =
+            case Json.Decode.decodeString decodePlanJson model.planText of
+                Ok planJson ->
+                    text "Decoded!!!"
+
+                Err err ->
+                    text <| Json.Decode.errorToString err
+    in
     column [ centerX ]
-        [ text model.planText
+        [ tree
         ]
 
 

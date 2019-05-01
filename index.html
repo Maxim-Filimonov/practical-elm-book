@@ -4861,6 +4861,308 @@ var author$project$Main$update = F2(
 					elm$core$Platform$Cmd$none);
 		}
 	});
+var elm$json$Json$Decode$map2 = _Json_map2;
+var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = elm$json$Json$Decode$map2(elm$core$Basics$apR);
+var elm$json$Json$Decode$andThen = _Json_andThen;
+var elm$json$Json$Decode$decodeValue = _Json_run;
+var elm$json$Json$Decode$fail = _Json_fail;
+var elm$json$Json$Decode$null = _Json_decodeNull;
+var elm$json$Json$Decode$oneOf = _Json_oneOf;
+var elm$json$Json$Decode$succeed = _Json_succeed;
+var elm$json$Json$Decode$value = _Json_decodeValue;
+var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalDecoder = F3(
+	function (pathDecoder, valDecoder, fallback) {
+		var nullOr = function (decoder) {
+			return elm$json$Json$Decode$oneOf(
+				_List_fromArray(
+					[
+						decoder,
+						elm$json$Json$Decode$null(fallback)
+					]));
+		};
+		var handleResult = function (input) {
+			var _n0 = A2(elm$json$Json$Decode$decodeValue, pathDecoder, input);
+			if (_n0.$ === 'Ok') {
+				var rawValue = _n0.a;
+				var _n1 = A2(
+					elm$json$Json$Decode$decodeValue,
+					nullOr(valDecoder),
+					rawValue);
+				if (_n1.$ === 'Ok') {
+					var finalResult = _n1.a;
+					return elm$json$Json$Decode$succeed(finalResult);
+				} else {
+					var finalErr = _n1.a;
+					return elm$json$Json$Decode$fail(
+						elm$json$Json$Decode$errorToString(finalErr));
+				}
+			} else {
+				return elm$json$Json$Decode$succeed(fallback);
+			}
+		};
+		return A2(elm$json$Json$Decode$andThen, handleResult, elm$json$Json$Decode$value);
+	});
+var elm$json$Json$Decode$field = _Json_decodeField;
+var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional = F4(
+	function (key, valDecoder, fallback, decoder) {
+		return A2(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+			A3(
+				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalDecoder,
+				A2(elm$json$Json$Decode$field, key, elm$json$Json$Decode$value),
+				valDecoder,
+				fallback),
+			decoder);
+	});
+var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
+	function (key, valDecoder, decoder) {
+		return A2(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+			A2(elm$json$Json$Decode$field, key, valDecoder),
+			decoder);
+	});
+var author$project$PlanParsers$Json$PlanJson = F4(
+	function (executionTime, plan, planningTime, triggers) {
+		return {executionTime: executionTime, plan: plan, planningTime: planningTime, triggers: triggers};
+	});
+var author$project$PlanParsers$Json$CommonFields = F6(
+	function (nodeType, plans, relationName, schema, startupCost, totalCost) {
+		return {nodeType: nodeType, plans: plans, relationName: relationName, schema: schema, startupCost: startupCost, totalCost: totalCost};
+	});
+var author$project$PlanParsers$Json$CteNode = F3(
+	function (common, alias_, cteName) {
+		return {alias_: alias_, common: common, cteName: cteName};
+	});
+var author$project$PlanParsers$Json$PCTe = function (a) {
+	return {$: 'PCTe', a: a};
+};
+var author$project$PlanParsers$Json$PGeneric = function (a) {
+	return {$: 'PGeneric', a: a};
+};
+var author$project$PlanParsers$Json$PResult = function (a) {
+	return {$: 'PResult', a: a};
+};
+var author$project$PlanParsers$Json$PSeqScan = function (a) {
+	return {$: 'PSeqScan', a: a};
+};
+var author$project$PlanParsers$Json$PSort = function (a) {
+	return {$: 'PSort', a: a};
+};
+var author$project$PlanParsers$Json$Plans = function (a) {
+	return {$: 'Plans', a: a};
+};
+var author$project$PlanParsers$Json$ResultNode = F2(
+	function (common, parentRelationship) {
+		return {common: common, parentRelationship: parentRelationship};
+	});
+var author$project$PlanParsers$Json$SeqScanNode = F5(
+	function (common, alias_, filter, relationName, rowsRemovedByFilter) {
+		return {alias_: alias_, common: common, filter: filter, relationName: relationName, rowsRemovedByFilter: rowsRemovedByFilter};
+	});
+var author$project$PlanParsers$Json$SortNode = F5(
+	function (common, sortKey, sortMethod, sortSpaceUsed, sortSpaceType) {
+		return {common: common, sortKey: sortKey, sortMethod: sortMethod, sortSpaceType: sortSpaceType, sortSpaceUsed: sortSpaceUsed};
+	});
+var elm$core$Basics$identity = function (x) {
+	return x;
+};
+var elm$json$Json$Decode$float = _Json_decodeFloat;
+var elm$json$Json$Decode$int = _Json_decodeInt;
+var elm$json$Json$Decode$list = _Json_decodeList;
+var elm$json$Json$Decode$map = _Json_map1;
+var elm$json$Json$Decode$string = _Json_decodeString;
+var author$project$PlanParsers$Json$decodeNode = function (nodeType) {
+	switch (nodeType) {
+		case 'CTE Scan':
+			return author$project$PlanParsers$Json$cyclic$decodeCteNode();
+		case 'Result':
+			return author$project$PlanParsers$Json$cyclic$decodeResultNode();
+		case 'Seq Scan':
+			return author$project$PlanParsers$Json$cyclic$decodeSeqScanNode();
+		case 'Sort':
+			return author$project$PlanParsers$Json$cyclic$decodeSortNode();
+		default:
+			return author$project$PlanParsers$Json$cyclic$decodeGenericNode();
+	}
+};
+function author$project$PlanParsers$Json$cyclic$decodeSortNode() {
+	var innerDecoder = A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'Sort Space Type',
+		elm$json$Json$Decode$string,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'Sort Space Used',
+			elm$json$Json$Decode$int,
+			A3(
+				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+				'Sort Method',
+				elm$json$Json$Decode$string,
+				A3(
+					NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+					'Sort Key',
+					elm$json$Json$Decode$list(elm$json$Json$Decode$string),
+					A2(
+						NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+						author$project$PlanParsers$Json$cyclic$decodeCommonFields(),
+						elm$json$Json$Decode$succeed(author$project$PlanParsers$Json$SortNode))))));
+	return A2(elm$json$Json$Decode$map, author$project$PlanParsers$Json$PSort, innerDecoder);
+}
+function author$project$PlanParsers$Json$cyclic$decodeSeqScanNode() {
+	var innerDecoder = A4(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
+		'Rows Removed by Filter',
+		elm$json$Json$Decode$int,
+		0,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'Relation Name',
+			elm$json$Json$Decode$string,
+			A4(
+				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
+				'Filter',
+				elm$json$Json$Decode$string,
+				'',
+				A3(
+					NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+					'Alias',
+					elm$json$Json$Decode$string,
+					A2(
+						NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+						author$project$PlanParsers$Json$cyclic$decodeCommonFields(),
+						elm$json$Json$Decode$succeed(author$project$PlanParsers$Json$SeqScanNode))))));
+	return A2(elm$json$Json$Decode$map, author$project$PlanParsers$Json$PSeqScan, innerDecoder);
+}
+function author$project$PlanParsers$Json$cyclic$decodeResultNode() {
+	var innerDecoder = A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'Parent Relatnship',
+		elm$json$Json$Decode$string,
+		A2(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+			author$project$PlanParsers$Json$cyclic$decodeCommonFields(),
+			elm$json$Json$Decode$succeed(author$project$PlanParsers$Json$ResultNode)));
+	return A2(elm$json$Json$Decode$map, author$project$PlanParsers$Json$PResult, innerDecoder);
+}
+function author$project$PlanParsers$Json$cyclic$decodeGenericNode() {
+	return A2(
+		elm$json$Json$Decode$map,
+		author$project$PlanParsers$Json$PGeneric,
+		author$project$PlanParsers$Json$cyclic$decodeCommonFields());
+}
+function author$project$PlanParsers$Json$cyclic$decodeCteNode() {
+	var innerDecoder = A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'CTE Name',
+		elm$json$Json$Decode$string,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'Alias',
+			elm$json$Json$Decode$string,
+			A2(
+				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+				author$project$PlanParsers$Json$cyclic$decodeCommonFields(),
+				elm$json$Json$Decode$succeed(author$project$PlanParsers$Json$CteNode))));
+	return A2(elm$json$Json$Decode$map, author$project$PlanParsers$Json$PCTe, innerDecoder);
+}
+function author$project$PlanParsers$Json$cyclic$decodeCommonFields() {
+	return A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'Total Cost',
+		elm$json$Json$Decode$float,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'Startup Cost',
+			elm$json$Json$Decode$float,
+			A4(
+				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
+				'Schema',
+				elm$json$Json$Decode$string,
+				'',
+				A3(
+					NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+					'Relation Name',
+					elm$json$Json$Decode$string,
+					A4(
+						NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
+						'Plans',
+						author$project$PlanParsers$Json$cyclic$decodePlans(),
+						author$project$PlanParsers$Json$Plans(_List_Nil),
+						A3(
+							NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+							'Node Type',
+							elm$json$Json$Decode$string,
+							elm$json$Json$Decode$succeed(author$project$PlanParsers$Json$CommonFields)))))));
+}
+function author$project$PlanParsers$Json$cyclic$decodePlans() {
+	return A2(
+		elm$json$Json$Decode$map,
+		author$project$PlanParsers$Json$Plans,
+		elm$json$Json$Decode$list(
+			author$project$PlanParsers$Json$cyclic$decodePlan()));
+}
+function author$project$PlanParsers$Json$cyclic$decodePlan() {
+	return A2(
+		elm$json$Json$Decode$andThen,
+		author$project$PlanParsers$Json$decodeNode,
+		A2(elm$json$Json$Decode$field, 'Node Type', elm$json$Json$Decode$string));
+}
+try {
+	var author$project$PlanParsers$Json$decodeSortNode = author$project$PlanParsers$Json$cyclic$decodeSortNode();
+	author$project$PlanParsers$Json$cyclic$decodeSortNode = function () {
+		return author$project$PlanParsers$Json$decodeSortNode;
+	};
+	var author$project$PlanParsers$Json$decodeSeqScanNode = author$project$PlanParsers$Json$cyclic$decodeSeqScanNode();
+	author$project$PlanParsers$Json$cyclic$decodeSeqScanNode = function () {
+		return author$project$PlanParsers$Json$decodeSeqScanNode;
+	};
+	var author$project$PlanParsers$Json$decodeResultNode = author$project$PlanParsers$Json$cyclic$decodeResultNode();
+	author$project$PlanParsers$Json$cyclic$decodeResultNode = function () {
+		return author$project$PlanParsers$Json$decodeResultNode;
+	};
+	var author$project$PlanParsers$Json$decodeGenericNode = author$project$PlanParsers$Json$cyclic$decodeGenericNode();
+	author$project$PlanParsers$Json$cyclic$decodeGenericNode = function () {
+		return author$project$PlanParsers$Json$decodeGenericNode;
+	};
+	var author$project$PlanParsers$Json$decodeCteNode = author$project$PlanParsers$Json$cyclic$decodeCteNode();
+	author$project$PlanParsers$Json$cyclic$decodeCteNode = function () {
+		return author$project$PlanParsers$Json$decodeCteNode;
+	};
+	var author$project$PlanParsers$Json$decodeCommonFields = author$project$PlanParsers$Json$cyclic$decodeCommonFields();
+	author$project$PlanParsers$Json$cyclic$decodeCommonFields = function () {
+		return author$project$PlanParsers$Json$decodeCommonFields;
+	};
+	var author$project$PlanParsers$Json$decodePlans = author$project$PlanParsers$Json$cyclic$decodePlans();
+	author$project$PlanParsers$Json$cyclic$decodePlans = function () {
+		return author$project$PlanParsers$Json$decodePlans;
+	};
+	var author$project$PlanParsers$Json$decodePlan = author$project$PlanParsers$Json$cyclic$decodePlan();
+	author$project$PlanParsers$Json$cyclic$decodePlan = function () {
+		return author$project$PlanParsers$Json$decodePlan;
+	};
+} catch ($) {
+throw 'Some top-level definitions from `PlanParsers.Json` are causing infinite recursion:\n\n  ┌─────┐\n  │    decodeSortNode\n  │     ↓\n  │    decodeSeqScanNode\n  │     ↓\n  │    decodeResultNode\n  │     ↓\n  │    decodeGenericNode\n  │     ↓\n  │    decodeCteNode\n  │     ↓\n  │    decodeCommonFields\n  │     ↓\n  │    decodePlans\n  │     ↓\n  │    decodePlan\n  │     ↓\n  │    decodeNode\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.0/halting-problem to learn how to fix it!';}
+var author$project$PlanParsers$Json$decodePlanJson = A4(
+	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
+	'Triggers',
+	elm$json$Json$Decode$list(elm$json$Json$Decode$string),
+	_List_Nil,
+	A4(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
+		'Planning Time',
+		elm$json$Json$Decode$float,
+		0,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'Plan',
+			author$project$PlanParsers$Json$decodePlan,
+			A4(
+				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
+				'Execution Time',
+				elm$json$Json$Decode$float,
+				0,
+				elm$json$Json$Decode$succeed(author$project$PlanParsers$Json$PlanJson)))));
+var elm$json$Json$Decode$decodeString = _Json_runOnString;
 var mdgriffith$elm_ui$Internal$Model$AlignX = function (a) {
 	return {$: 'AlignX', a: a};
 };
@@ -5067,12 +5369,6 @@ var mdgriffith$elm_ui$Internal$Model$asEl = mdgriffith$elm_ui$Internal$Model$AsE
 var mdgriffith$elm_ui$Internal$Model$AsParagraph = {$: 'AsParagraph'};
 var mdgriffith$elm_ui$Internal$Model$asParagraph = mdgriffith$elm_ui$Internal$Model$AsParagraph;
 var elm$core$Basics$not = _Basics_not;
-var elm$core$Basics$identity = function (x) {
-	return x;
-};
-var elm$json$Json$Decode$map = _Json_map1;
-var elm$json$Json$Decode$map2 = _Json_map2;
-var elm$json$Json$Decode$succeed = _Json_succeed;
 var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	switch (handler.$) {
 		case 'Normal':
@@ -10318,14 +10614,23 @@ var mdgriffith$elm_ui$Element$text = function (content) {
 	return mdgriffith$elm_ui$Internal$Model$Text(content);
 };
 var author$project$Main$displayPage = function (model) {
+	var tree = function () {
+		var _n0 = A2(elm$json$Json$Decode$decodeString, author$project$PlanParsers$Json$decodePlanJson, model.planText);
+		if (_n0.$ === 'Ok') {
+			var planJson = _n0.a;
+			return mdgriffith$elm_ui$Element$text('Decoded!!!');
+		} else {
+			var err = _n0.a;
+			return mdgriffith$elm_ui$Element$text(
+				elm$json$Json$Decode$errorToString(err));
+		}
+	}();
 	return A2(
 		mdgriffith$elm_ui$Element$column,
 		_List_fromArray(
 			[mdgriffith$elm_ui$Element$centerX]),
 		_List_fromArray(
-			[
-				mdgriffith$elm_ui$Element$text(model.planText)
-			]));
+			[tree]));
 };
 var author$project$Main$ChangedPlanText = function (a) {
 	return {$: 'ChangedPlanText', a: a};
@@ -10612,10 +10917,6 @@ var elm$html$Html$Events$preventDefaultOn = F2(
 			event,
 			elm$virtual_dom$VirtualDom$MayPreventDefault(decoder));
 	});
-var elm$json$Json$Decode$andThen = _Json_andThen;
-var elm$json$Json$Decode$fail = _Json_fail;
-var elm$json$Json$Decode$field = _Json_decodeField;
-var elm$json$Json$Decode$string = _Json_decodeString;
 var mdgriffith$elm_ui$Element$Input$onKey = F2(
 	function (desiredCode, msg) {
 		var decode = function (code) {

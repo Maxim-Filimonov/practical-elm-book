@@ -11,7 +11,9 @@ import Element.Events exposing (..)
 import Element.Font as Font
 import Element.Input as Input
 import Html
+import Http
 import Json.Decode
+import Json.Encode as E
 import PlanParsers.Json exposing (..)
 
 
@@ -33,6 +35,7 @@ type Msg
     | ChangedPassword String
     | ChangedUserName String
     | LoginSubmitted
+    | FinishedLogin (Result Http.Error String)
 
 
 type alias Model =
@@ -43,6 +46,7 @@ type alias Model =
     , userName : String
     , password : String
     , lastError : Maybe String
+    , sessionId : Maybe String
     }
 
 
@@ -59,6 +63,7 @@ init flags =
       , lastError = Nothing
       , userName = ""
       , password = ""
+      , sessionId = Nothing
       }
       -- ( { currentPage = DisplayPage
       --   , planText = sampleJSON
@@ -75,6 +80,30 @@ init flags =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
+
+
+serverUrl =
+    "http://localhost:34567/"
+
+
+login : String -> String -> Cmd Msg
+login userName password =
+    let
+        body =
+            Http.jsonBody <|
+                E.object
+                    [ ( "username", E.string userName )
+                    , ( "password", E.string password )
+                    ]
+
+        responseDecoder =
+            Json.Decode.field "sessionId" Json.Decode.string
+    in
+    Http.post
+        { url = serverUrl ++ "login"
+        , body = body
+        , expect = Http.expectJson FinishedLogin responseDecoder
+        }
 
 
 
@@ -115,7 +144,36 @@ update msg model =
             ( { model | currentPage = LoginPage, userName = "", password = "" }, Cmd.none )
 
         LoginSubmitted ->
-            ( model, Cmd.none )
+            ( model, login model.userName model.password )
+
+        FinishedLogin (Ok value) ->
+            ( { model | sessionId = Just value, currentPage = InputPage, lastError = Nothing }, Cmd.none )
+
+        FinishedLogin (Err err) ->
+            ( { model | lastError = Just <| httpErrorString err }, Cmd.none )
+
+
+httpErrorString : Http.Error -> String
+httpErrorString error =
+    let
+        _ =
+            Debug.toString error
+    in
+    case error of
+        Http.BadBody message ->
+            "Unable to handle response: " ++ message
+
+        Http.BadStatus statusCode ->
+            "Server error: " ++ String.fromInt statusCode
+
+        Http.BadUrl url ->
+            "Invalid URL: " ++ url
+
+        Http.NetworkError ->
+            "Network error"
+
+        Http.Timeout ->
+            "Request timeout"
 
 
 

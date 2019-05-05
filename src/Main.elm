@@ -89,6 +89,7 @@ serverUrl =
 login : String -> String -> Cmd Msg
 login userName password =
     let
+        body : Http.Body
         body =
             Http.jsonBody <|
                 E.object
@@ -96,6 +97,7 @@ login userName password =
                     , ( "password", E.string password )
                     ]
 
+        responseDecoder : Json.Decode.Decoder String
         responseDecoder =
             Json.Decode.field "sessionId" Json.Decode.string
     in

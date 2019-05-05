@@ -1,6 +1,8 @@
 {
   "dependencies": {
-    "parcel": "^1.12.3"
+    "parcel": "^1.12.3",
+    "lokka": "^1.7.0",
+    "lokka-transport-http": "^1.6.1"
   },
   "scripts": {
     "build": "parcel build index.html",

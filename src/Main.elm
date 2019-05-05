@@ -508,10 +508,62 @@ displayPage model =
 savedPlansPage : Model -> Element Msg
 savedPlansPage model =
     let
-        planDisplay : List (Element msg)
-        planDisplay =
-            List.map (\plan -> el [] <| text plan.name) model.savedPlans
+        annotateVersion name planVersion =
+            { version = planVersion.version
+            , createdAt = planVersion.createdAt
+            , planText = planVersion.planText
+            , name = name
+            }
 
+        annotateVersions plan =
+            List.map (annotateVersion plan.name) plan.versions
+
+        tableAttr =
+            [ width (px 800)
+            , paddingEach { top = 10, bottom = 50, left = 10, right = 10 }
+            , spacingXY 2 10
+            , centerX
+            ]
+
+        headerAttr =
+            [ Font.bold
+            , Background.color lightGray
+            , Border.color darkest
+            , Border.widthEach { defaultBorders | bottom = 1 }
+            , centerX
+            , padding 4
+            , Font.color white
+            ]
+
+        planDisplay : Element msg
+        planDisplay =
+            table tableAttr
+                { data = List.concatMap annotateVersions model.savedPlans
+                , columns =
+                    [ { header = el headerAttr <| text "PLan Name"
+                      , width = fill
+                      , view =
+                            \plan ->
+                                el
+                                    [ Font.underline
+                                    , mouseOver [ Font.color lightGreen ]
+                                    , centerX
+                                    ]
+                                <|
+                                    text plan.name
+                      }
+                    , { header = el headerAttr <| text "Creation time"
+                      , width = fill
+                      , view = .createdAt >> text
+                      }
+                    , { header = el headerAttr <| text "Version"
+                      , width = fill
+                      , view = .version >> String.fromInt >> text >> el [ centerX ]
+                      }
+                    ]
+                }
+
+        -- List.map (\plan -> el [] <| text plan.name) model.savedPlans
         error =
             case model.lastError of
                 Just errorMessage ->
@@ -520,10 +572,10 @@ savedPlansPage model =
                 Nothing ->
                     none
     in
-    column []
-        ([ error ]
-            ++ planDisplay
-        )
+    column [ width fill ]
+        [ error
+        , planDisplay
+        ]
 
 
 loginPage : Model -> Element Msg

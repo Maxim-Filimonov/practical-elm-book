@@ -157,10 +157,6 @@ update msg model =
 
 httpErrorString : Http.Error -> String
 httpErrorString error =
-    let
-        _ =
-            Debug.toString error
-    in
     case error of
         Http.BadBody message ->
             "Unable to handle response: " ++ message

@@ -83,7 +83,7 @@ subscriptions model =
 
 
 serverUrl =
-    "http://localhost:34567/"
+    ".netlify/functions/"
 
 
 login : String -> String -> Cmd Msg

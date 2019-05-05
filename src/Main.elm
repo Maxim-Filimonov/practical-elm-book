@@ -13,6 +13,7 @@ import Element.Input as Input
 import Html
 import Http
 import Json.Decode
+import Json.Decode.Pipeline exposing (..)
 import Json.Encode as E
 import PlanParsers.Json exposing (..)
 
@@ -21,6 +22,7 @@ type Page
     = InputPage
     | DisplayPage
     | LoginPage
+    | SavedPlansPage
 
 
 type Msg
@@ -36,6 +38,8 @@ type Msg
     | ChangedUserName String
     | LoginSubmitted
     | FinishedLogin (Result Http.Error String)
+    | GotSavedPlans (Result Http.Error (List SavedPlan))
+    | SavedPlansRequested
 
 
 type alias Model =
@@ -47,6 +51,7 @@ type alias Model =
     , password : String
     , lastError : Maybe String
     , sessionId : Maybe String
+    , savedPlans : List SavedPlan
     }
 
 
@@ -64,6 +69,7 @@ init flags =
       , userName = ""
       , password = ""
       , sessionId = Nothing
+      , savedPlans = []
       }
       -- ( { currentPage = DisplayPage
       --   , planText = sampleJSON
@@ -154,6 +160,63 @@ update msg model =
         FinishedLogin (Err err) ->
             ( { model | lastError = Just <| httpErrorString err }, Cmd.none )
 
+        SavedPlansRequested ->
+            ( { model | currentPage = SavedPlansPage }, getSavedPlans model.sessionId )
+
+        GotSavedPlans (Ok value) ->
+            ( { model | savedPlans = value }, Cmd.none )
+
+        GotSavedPlans (Err err) ->
+            ( { model | lastError = Just <| httpErrorString err }, Cmd.none )
+
+
+getSavedPlans : Maybe String -> Cmd Msg
+getSavedPlans sessionId =
+    Http.request
+        { method = "GET"
+        , headers =
+            [ Http.header "SessionId" <| Maybe.withDefault "" sessionId
+            ]
+        , url = serverUrl ++ "plans"
+        , body = Http.emptyBody
+        , timeout = Nothing
+        , tracker = Nothing
+        , expect = Http.expectJson GotSavedPlans decodeSavedPlans
+        }
+
+
+type alias SavedPlan =
+    { id : Int
+    , name : String
+    , versions : List PlanVersion
+    }
+
+
+type alias PlanVersion =
+    { version : Int
+    , createdAt : String
+    , planText : String
+    }
+
+
+decodeSavedPlans : Json.Decode.Decoder (List SavedPlan)
+decodeSavedPlans =
+    Json.Decode.field "plans" <|
+        Json.Decode.list
+            (Json.Decode.succeed SavedPlan
+                |> required "id" Json.Decode.int
+                |> required "name" Json.Decode.string
+                |> required "planVersions" (Json.Decode.list decodePlanVersion)
+            )
+
+
+decodePlanVersion : Json.Decode.Decoder PlanVersion
+decodePlanVersion =
+    Json.Decode.succeed PlanVersion
+        |> required "version" Json.Decode.int
+        |> required "createdAt" Json.Decode.string
+        |> required "planText" Json.Decode.string
+
 
 httpErrorString : Http.Error -> String
 httpErrorString error =
@@ -184,6 +247,7 @@ menuPanel model =
         items =
             [ el [ pointer, onClick CreatePlanClicked ] <| text "New Plan"
             , el [ pointer, onClick LoginClicked ] <| text "Login"
+            , el [ pointer, onClick SavedPlansRequested ] <| text "Saved Plans"
             ]
 
         panel =
@@ -441,6 +505,27 @@ displayPage model =
         ]
 
 
+savedPlansPage : Model -> Element Msg
+savedPlansPage model =
+    let
+        planDisplay : List (Element msg)
+        planDisplay =
+            List.map (\plan -> el [] <| text plan.name) model.savedPlans
+
+        error =
+            case model.lastError of
+                Just errorMessage ->
+                    el Attr.error <| text errorMessage
+
+                Nothing ->
+                    none
+    in
+    column []
+        ([ error ]
+            ++ planDisplay
+        )
+
+
 loginPage : Model -> Element Msg
 loginPage model =
     let
@@ -492,6 +577,9 @@ view model =
 
                 LoginPage ->
                     loginPage model
+
+                SavedPlansPage ->
+                    savedPlansPage model
     in
     { title = "Visual Expresser"
     , body =

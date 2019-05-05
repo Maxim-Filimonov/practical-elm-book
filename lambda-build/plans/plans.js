@@ -9,6 +9,7 @@ const client = new Lokka({
 
 exports.handler = async (event, context) => {
   try {
+    console.dir(event.headers);
     const result = await client.query(`
     {
       plans: SavedPlan {
@@ -17,8 +18,11 @@ exports.handler = async (event, context) => {
           createdAt
           version
         }
+        id
+        name
       }
     }
+    
     `);
     return {
       statusCode: 200,

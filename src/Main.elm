@@ -40,6 +40,8 @@ type Msg
     | FinishedLogin (Result Http.Error String)
     | GotSavedPlans (Result Http.Error (List SavedPlan))
     | SavedPlansRequested
+    | LogoutRequested
+    | ShowPlan String
 
 
 type alias Model =
@@ -169,6 +171,12 @@ update msg model =
         GotSavedPlans (Err err) ->
             ( { model | lastError = Just <| httpErrorString err }, Cmd.none )
 
+        ShowPlan planText ->
+            ( { model | planText = planText, currentPage = DisplayPage }, Cmd.none )
+
+        LogoutRequested ->
+            ( { model | sessionId = Nothing }, Cmd.none )
+
 
 getSavedPlans : Maybe String -> Cmd Msg
 getSavedPlans sessionId =
@@ -246,9 +254,17 @@ menuPanel model =
     let
         items =
             [ el [ pointer, onClick CreatePlanClicked ] <| text "New Plan"
-            , el [ pointer, onClick LoginClicked ] <| text "Login"
-            , el [ pointer, onClick SavedPlansRequested ] <| text "Saved Plans"
             ]
+                ++ (case model.sessionId of
+                        Just _ ->
+                            [ el [ pointer, onClick SavedPlansRequested ] <| text "Saved Plans"
+                            , el [ pointer, onClick LogoutRequested ] <| text "Logout"
+                            ]
+
+                        Nothing ->
+                            [ el [ pointer, onClick LoginClicked ] <| text "Login"
+                            ]
+                   )
 
         panel =
             column
@@ -535,7 +551,7 @@ savedPlansPage model =
             , Font.color white
             ]
 
-        planDisplay : Element msg
+        planDisplay : Element Msg
         planDisplay =
             table tableAttr
                 { data = List.concatMap annotateVersions model.savedPlans
@@ -548,6 +564,8 @@ savedPlansPage model =
                                     [ Font.underline
                                     , mouseOver [ Font.color lightGreen ]
                                     , centerX
+                                    , pointer
+                                    , onClick <| ShowPlan plan.planText
                                     ]
                                 <|
                                     text plan.name
@@ -558,7 +576,7 @@ savedPlansPage model =
                       }
                     , { header = el headerAttr <| text "Version"
                       , width = fill
-                      , view = .version >> String.fromInt >> text >> el [ centerX ]
+                      , view = .version >> String.fromInt >> text >> el [ Font.center ]
                       }
                     ]
                 }
